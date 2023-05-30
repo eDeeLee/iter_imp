@@ -4,7 +4,7 @@
 - 以下のコマンドで実行します。
 
 ```
-python iter_imp_align <任意の整数>
+python iter_imp_align.py <任意の整数>
 ```
 
 - 実行例は以下のようになります。
