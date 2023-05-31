@@ -1,6 +1,6 @@
 # iter_imp
 
-- このプログラムは6つのアミノ酸配列をiteration improving methodを用いてアラインメントするものです。
+- このプログラムは6つのアミノ酸配列をiteration improving methodの改良版を用いてアラインメントするものです。
 - 以下のコマンドで実行します。
 
 ```
