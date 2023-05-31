@@ -4,12 +4,12 @@ import numpy as np
 import copy
 import sys
 
-def get_amino(seq, index):
+def get_amino(seq, index): # indexの位置のアミノ酸を取得
     if (index >= (len(seq))) | (index < 0):
         return '-'
     return seq[index]
 
-def get_inout(seq, index):
+def get_inout(seq, index): # 配列の中か外かを判別（必要ないかも？）
     if (index >= (len(seq)-1)) | (index < 1):
         return '-'
     if seq[index] == '-':
@@ -18,7 +18,7 @@ def get_inout(seq, index):
         return '+'
     
 def get_score(matrix, amino1, amino2):
-    if ((amino1 == '-') | (amino1 == '+')) & ((amino2 == '-') | (amino2 == '+')): # アウトギャップペナルティの設定
+    if ((amino1 == '-') | (amino1 == '+')) & ((amino2 == '-') | (amino2 == '+')): # ギャップ-ギャップペナルティの設定
         return 0
     return matrix[amino1][amino2]
 
@@ -35,7 +35,7 @@ def main():
 
     seqs = [copia, MMULV, HTLV, RSV, SMRV, MMTV]
 
-    max_steps = 10000
+    max_steps = 10000 # 最大繰り返し回数
     no_change = 0
     random.seed(int(sys.argv[1]))
 
@@ -43,16 +43,15 @@ def main():
         changed = False
         pre_seqs = copy.deepcopy(seqs)
         seqc_num = random.randrange(round(len(seqs)/2)) + 1
-        #seqc_num = 1
+        #seqc_num = 1 # 通常のIIMではこちらを使用
         seq_num = random.sample(range(len(seqs)), seqc_num)
-        #seq_num = i % len(seqs)
-        #seqs[seq_num] = re.sub('[+-]', '', seqs[seq_num])
+        #seq_num = i % len(seqs) # ランダムではなく順番に選ぶ場合（IIM用）
         if i != 0:
             max_len = max([len(seq) for seq in seqs])
-            for k in range(len(seqs)):
+            for k in range(len(seqs)): # 全ての配列の長さを揃える（必要ないかも）
                 seqs[k] = seqs[k] + '-'*(max_len - len(seqs[k]))
 
-            for k in range(max_len):
+            for k in range(max_len): # SeqCの中で全てがギャップである部分は消す
                 space = True
                 for j in range(seqc_num):
                     if (seqs[seq_num[j]][max_len - 1 - k] != '-') & (seqs[seq_num[j]][max_len - 1 - k] != '+'):
@@ -62,7 +61,7 @@ def main():
                     for j in range(seqc_num):
                         seqs[seq_num[j]] = seqs[seq_num[j]][:max_len - 1 - k] + seqs[seq_num[j]][max_len - k:]
 
-            for k in range(max_len):
+            for k in range(max_len): # SeqC以外の中で全てがギャップである部分は消す
                 space = True
                 for j in range(len(seqs)):
                     if j in seq_num:
@@ -84,7 +83,7 @@ def main():
             DP[0][j] = penalty * j
         for j in range(seqc_len+1):
             DP[j][0] = penalty * j
-        TB = np.zeros((seqc_len+1, profile_len+1))
+        TB = np.zeros((seqc_len+1, profile_len+1)) # トレースバック用
 
         for j in range(1, seqc_len+1):
             for k in range(1, profile_len+1):
@@ -109,16 +108,16 @@ def main():
 
                 DP[j][k] = max(score1, score2, score3)
 
-                if DP[j][k] == score1:
+                if DP[j][k] == score1: # ギャップは少ない方がいいのでscoreが同じ場合はscore1を優先したい
                     TB[j][k] = 1
                 elif DP[j][k] == score2:
                     TB[j][k] = 2
                 else:
                     TB[j][k] = 3
-        #print(DP[len(seqc)][profile_len])
+        # print(DP[len(seqc)][profile_len])  # 今回のSP score
         s1 = seqc_len
         s2 = profile_len
-        while (s1 >= 0) & (s2 >= 0):
+        while (s1 >= 0) & (s2 >= 0): # トレースバック用のmatrixを見て、適宜ギャップを挿入する
             if TB[s1][s2] == 1:
                 s1 = s1 - 1
                 s2 = s2 - 1
@@ -157,10 +156,10 @@ def main():
                 break
         
         max_len = max([len(seq) for seq in seqs])
-        for k in range(len(seqs)):
+        for k in range(len(seqs)): # 全ての配列の長さを揃える
             seqs[k] = seqs[k] + '-'*(max_len - len(seqs[k]))
     
-        for k in range(max_len):
+        for k in range(max_len): # 全ての配列でギャップになっている部分があれば削除
             space = True
             for j in range(len(seqs)):
                 if (seqs[j][max_len - 1 - k] != '-') & (seqs[j][max_len - 1 - k] != '+'):
@@ -170,35 +169,20 @@ def main():
                 for j in range(len(seqs)):
                     seqs[j] = seqs[j][:max_len - 1 - k] + seqs[j][max_len - k:]
 
-        if pre_seqs != seqs:
+        if pre_seqs != seqs: # 今回のアラインメントで変化したかどうかを判定
             changed = True
 
         if changed:
             no_change = 0
         no_change = no_change + 1
-        if no_change > 300:
+        if no_change > 300: # 300回連続で変化がなければ終了
             print('stoped at step %d'%i)
             break
-    '''
-    max_len = max([len(seq) for seq in seqs])
-    for i in range(len(seqs)):
-        seqs[i] = seqs[i] + '-'*(max_len - len(seqs[i]))
-    
-    for i in range(max_len):
-        space = True
-        for j in range(len(seqs)):
-            if (seqs[j][max_len - 1 - i] != '-') & (seqs[j][max_len - 1 - i] != '+'):
-                space = False
-                break
-        if space:
-            for j in range(len(seqs)):
-                seqs[j] = seqs[j][:max_len - 1 - i] + seqs[j][max_len - i:]
-    '''
 
     final_score = 0
     max_len = max([len(seq) for seq in seqs])
     print('random seed is %d'%int(sys.argv[1]))
-    for i in range(len(seqs)):
+    for i in range(len(seqs)): # 最終的に得られたマルチプルアラインメントのSP scoreを算出
         print(seqs[i])
         for j in range(i+1, len(seqs)):
             for k in range(max_len):
